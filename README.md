@@ -1,5 +1,4 @@
-# PJATK
-## s22064 thesis
+# s22064 thesis
 
 ***
 
