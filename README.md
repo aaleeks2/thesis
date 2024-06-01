@@ -1,7 +1,4 @@
 # s22064 thesis
-
-***
-
 Prerequisites:
 <ol>
     <li>Install python 3.11.0,</li>
