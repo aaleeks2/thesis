@@ -1,5 +1,5 @@
 # s22064 thesis
-Prerequisites:
+Steps:
 <ol>
     <li>Install python 3.11.0,</li>
     <li>Download dataset and put them in `thesis_datasets` directory:</li>
