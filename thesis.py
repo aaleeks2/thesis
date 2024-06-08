@@ -1,7 +1,6 @@
 import time
 from enum import Enum
 import pandas as pd
-import streamlit as st
 import numpy as np
 from sklearn.metrics.pairwise import linear_kernel
 from sklearn.feature_extraction.text import CountVectorizer
@@ -13,9 +12,15 @@ from surprise import Reader, Dataset, SVD, NMF
 from surprise.model_selection import cross_validate
 from ast import literal_eval
 
-def search_for_movie(dataframe: pd.DataFrame, title_column: str, query: str):
-    titles = dataframe[[title_column]]
-    return titles.loc[titles[title_column].str.contains(query)]
+
+def find_movies(dataframe: pd.DataFrame, column_name: str, query_string: str):
+    if column_name not in dataframe.columns:
+        raise ValueError(f"Column '{column_name}' does not exist in the dataframe")
+
+    mask = dataframe[column_name].str.contains(query_string, case=False, na=False)
+    matching_movies = dataframe[mask]
+    result = matching_movies[[column_name]].reset_index()
+    return result
 
 class ContentBasedRecommender:
     def __init__(self):
@@ -23,9 +28,13 @@ class ContentBasedRecommender:
         self._movies: pd.DataFrame = pd.read_csv('thesis_datasets/tmdb_5000_movies.csv')
         self._credits.columns = ['id', 'tittle', 'cast', 'crew']
         self._movies = self._movies.merge(self._credits, on='id')
+        print('Content Based constructor')
 
     def search_for_movie(self, query):
-        return search_for_movie(self._movies, 'original_title', query)
+        return find_movies(self._movies, 'original_title', query)
+
+    def get_movies(self):
+        return self._movies['original_title']
 
     def get_demographic_filtering(self, top_n: int = 10):
         """
@@ -131,8 +140,11 @@ class CollaborativeBasedRecommender:
             self._knn_data = self._prepare_knn_data()
         self._trained_model = self._train_model()
 
-    def search_for_movie(self, query: str) -> str:
-        return search_for_movie(self._movies, 'title', query)
+    def search_for_movie(self, query: str):
+        return find_movies(self._movies, 'title', query)
+
+    def get_titles(self):
+        return self._movies['title'].values
 
     def _prepare_knn_data(self):
         movies_data = self._movies[['movieId', 'title']]
@@ -198,7 +210,8 @@ class CollaborativeBasedRecommender:
 
 def add_rating(user_id: int, movie_title: str, rating: float):
     movies = pd.read_csv('thesis_datasets/movies.csv')
-    movie = movies[movies['title'] == movie_title]
+    movie = movies[movies['title'] == movie_title].values
+    print(movie)
     if len(movie) == 0:
         movie_id = movies.loc[movies['movieId'].idxmax()]
         new_movie_id = movie_id.movieId
@@ -206,17 +219,11 @@ def add_rating(user_id: int, movie_title: str, rating: float):
         movies = movies._append(new_movie_entry, ignore_index=True)
         movies.to_csv('thesis_datasets/movies.csv', index=False)
     else:
-        print(int(movie.movieId))
-        new_movie_id = movie.movieId
+        new_movie_id = movie[0][0]
 
     ratings = pd.read_csv('thesis_datasets/ratings.csv')
-    # rating_entry = {'userId': user_id, 'movieId': new_movie_id, 'rating': rating}
-    # ratings._append(rating_entry, ignore_index=True)
-    # print(f'user_id {user_id}')
-    # print(f'new_movie_id {new_movie_id}')
-    # print(f'rating {rating}')
-    # ratings.loc[len(ratings.index)] = [user_id, new_movie_id, rating, 0]
-    # ratings.to_csv('thesis_datasets/ratings.csv', index=False)
+    ratings.loc[len(ratings.index)] = [user_id, new_movie_id, rating, 0]
+    ratings.to_csv('thesis_datasets/ratings.csv', index=False)
 
 
 def get_new_user_id():
@@ -225,16 +232,22 @@ def get_new_user_id():
     return int(max_user_id + 1)
 
 
-# cbr = CollaborativeBasedRecommender(AlgorithmType.KNN)
-contentBased = CollaborativeBasedRecommender(AlgorithmType.SVD)
+collab = ContentBasedRecommender()
+contentBased = ContentBasedRecommender()
+movies = collab.search_for_movie('Harry')
+movie = movies.values[0]
+print(movie[1])
+# print(val)
 # print(contentBased.search_for_movie('potter'))
-# print(contentBased.search_for_movie('Jurassic'))
 # print(contentBased.search_for_movie('Star'))
+# print(contentBased.search_for_movie('Blade'))
+# print(contentBased.search_for_movie('Shaw'))
+# my_user_id = get_new_user_id()
+# print(my_user_id)
+# add_rating(611, 'Jurassic Park (1993)', 4)
+# add_rating(611, ' Blade Runner (1982)', 5)
+# add_rating(611, 'Blade Runner 2049 (2017)', 4.5)
+# add_rating(611, 'Star Wars: Episode IV - A New Hope (1977)', 4)
+# add_rating(611, 'The Shawshank Redemption (1994)', 4.5)
+# print(contentBased.get_recommendation('Jurassic World: Fallen Kingdom (2018)', 5))
 
-my_user_id = get_new_user_id()
-print(my_user_id)
-add_rating(my_user_id, 'Jurassic Park (1993)', 4)
-
-# print(contentBased.search_for_movie('Where'))
-# print(contentBased.get_credits_genres_keywords_based_recommendations('Harry Potter and the Half-Blood Prince'))
-# print(contentBased.get_recommendation(362, 5))
