@@ -223,16 +223,21 @@ def add_rating(user_id: int, movie_title: str, rating: float):
     movie = movies[movies['title'] == movie_title].values
     print(movie)
     if len(movie) == 0:
-        movie_id = movies.loc[movies['movieId'].idxmax()]
-        new_movie_id = movie_id.movieId
-        new_movie_entry = {'movieId': new_movie_id, 'title': movie_title}
-        movies = movies._append(new_movie_entry, ignore_index=True)
-        movies.to_csv('thesis_datasets/movies.csv', index=False)
+        new_movie_id = movies.loc[movies['movieId'].idxmax()]
+        movie_id = new_movie_id.movieId
+        new_movie_entry = {'movieId': movie_id, 'title': movie_title}
+        new_movies = movies._append(new_movie_entry, ignore_index=True)
+        new_movies.to_csv('thesis_datasets/movies.csv', index=False)
     else:
-        new_movie_id = movie[0][0]
+        movie_id = movie[0][0]
 
     ratings = pd.read_csv('thesis_datasets/ratings.csv')
-    ratings.loc[len(ratings.index)] = [user_id, new_movie_id, rating, 0]
+    rating_row_index = ratings.loc[(ratings['movieId'] == movie_id) & (ratings['userId'] == user_id)].index
+    if len(rating_row_index) == 0:
+        ratings.loc[len(ratings.index)] = [user_id, movie_id, rating, 0]
+    else:
+        the_index = rating_row_index[0]
+        ratings.loc[the_index, 'rating'] = rating
     ratings.to_csv('thesis_datasets/ratings.csv', index=False)
 
 
