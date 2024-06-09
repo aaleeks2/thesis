@@ -245,24 +245,3 @@ def get_new_user_id():
     ratings = pd.read_csv('thesis_datasets/ratings.csv')
     max_user_id = ratings.loc[ratings['userId'].idxmax()].userId
     return int(max_user_id + 1)
-
-
-collab = ContentBasedRecommender()
-contentBased = ContentBasedRecommender()
-movies = collab.search_for_movie('Harry')
-movie = movies.values[0]
-print(movie[1])
-# print(val)
-# print(contentBased.search_for_movie('potter'))
-# print(contentBased.search_for_movie('Star'))
-# print(contentBased.search_for_movie('Blade'))
-# print(contentBased.search_for_movie('Shaw'))
-# my_user_id = get_new_user_id()
-# print(my_user_id)
-# add_rating(611, 'Jurassic Park (1993)', 4)
-# add_rating(611, ' Blade Runner (1982)', 5)
-# add_rating(611, 'Blade Runner 2049 (2017)', 4.5)
-# add_rating(611, 'Star Wars: Episode IV - A New Hope (1977)', 4)
-# add_rating(611, 'The Shawshank Redemption (1994)', 4.5)
-# print(contentBased.get_recommendation('Jurassic World: Fallen Kingdom (2018)', 5))
-
