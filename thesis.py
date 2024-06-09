@@ -146,6 +146,16 @@ class CollaborativeBasedRecommender:
     def get_titles(self):
         return self._movies['title'].values
 
+    def get_user_ids(self):
+        return self._ratings['userId'].astype(int).unique()
+
+    def get_user_ratings(self, user_id: int):
+        movies_data = self._movies[['movieId', 'title']]
+        ratings_data = self._ratings[['userId', 'movieId', 'rating']]
+        merged = pd.merge(ratings_data, movies_data, on='movieId')
+        ratings = merged.loc[merged['userId'] == user_id]
+        return ratings[['title', 'rating']]
+
     def _prepare_knn_data(self):
         movies_data = self._movies[['movieId', 'title']]
         ratings_data = self._ratings[['userId', 'movieId', 'rating']]
