@@ -199,7 +199,7 @@ class CollaborativeBasedRecommender:
         else:
             movie_title = query
             query_index_2 = self._knn_data.index.values.tolist().index(movie_title)
-            distances, indices = self._trained_model.kneighbors(self._knn_data.iloc[query_index_2,:].values.reshape(1, -1), n_neighbors=top_n+1)
+            distances, indices = self._trained_model.kneighbors(self._knn_data.iloc[query_index_2, :].values.reshape(1, -1), n_neighbors=top_n+1)
             recommended_movies = []
             calculated_distances = []
             for i in range(1, len(indices[0])):

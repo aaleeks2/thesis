@@ -1,5 +1,5 @@
 import streamlit as st
-
+import pandas as pd
 import thesis
 st.set_page_config(layout="wide")
 st.title('Collaborative filtering recommender')
@@ -13,11 +13,9 @@ previous_user_id = 0
 
 def set_new_user_id(new_user_id: int):
     st.session_state.user_id = new_user_id
-    print(st.session_state.user_id)
 
 
 def add_rating():
-    print(f'user id in add_rating: {st.session_state.user_id}')
     the_movie = st.session_state.movie
     st.session_state.movie = None
     the_rating = st.session_state.rating
@@ -34,20 +32,17 @@ col01, col02 = st.columns(2)
 titles = svd.get_titles()
 with col01:
     st.header('Decomposition models')
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader('SVD')
-        selected_movie = st.selectbox('Select a movie', titles, index=None)
-        top_n = st.slider('N movies to recommend', min_value=1, max_value=10, value=0)
-        if selected_movie is not None and top_n > 0:
-            st.write(svd.get_recommendation(selected_movie, top_n))
+    st.subheader('SVD')
+    # selected_movie = st.selectbox('Select a movie', titles, index=None)
+    top_n = st.slider('N movies to recommend', min_value=1, max_value=10, value=0)
+    if top_n > 0:
+        st.write(pd.DataFrame(svd.get_recommendation(st.session_state.user_id, top_n)))
 
-    with col2:
-        st.subheader('NMF')
-        selected_movie = st.selectbox('Select a movie ', titles, index=None)
-        top_n = st.slider('N movies to recommend ', min_value=1, max_value=10, value=0)
-        if selected_movie is not None and top_n > 0:
-            st.write(nmf.get_recommendation(selected_movie, top_n))
+    st.subheader('NMF')
+    # selected_movie = st.selectbox('Select a movie ', titles, index=None)
+    top_n = st.slider('N movies to recommend ', min_value=1, max_value=10, value=0)
+    if top_n > 0:
+        st.write(pd.DataFrame(nmf.get_recommendation(st.session_state.user_id, top_n)))
 
 with col02:
     if 'user_id' not in st.session_state:
@@ -75,20 +70,18 @@ with col02:
             st.write(user_ratings)
 
     with st.form('add_rating_form'):
-        print(f'in form {st.session_state.user_id}')
         st.subheader('Add rating')
         selected_movie = st.selectbox('Select a movie', titles, index=None, key='movie')
         rating = st.slider(label='Rating', min_value=1.0, max_value=5.0, step=0.5, key='rating')
-        submit_button = st.form_submit_button(label='Submit', on_click=add_rating, )
+        submit_button = st.form_submit_button(label='Submit', on_click=add_rating)
 
-    # select user
-
-    # add rating
     # get recommendation
 
-# with col3:
-#     st.subheader('K Nearest Neighbors')
-#     selected_movie = st.selectbox('Select a movie ', titles, index=None)
-#     top_n = st.slider(' N movies to recommend', min_value=1, max_value=10, value=0)
-#     if selected_movie is not None and top_n > 0:
-#         st.write(contentBased.get_credits_genres_keywords_based_recommendations(selected_movie, top_n))
+    st.subheader('Get recommendation for selected user')
+    if st.session_state.user_id is not 0 and st.session_state.user_id is not None:
+        selected_movie = st.selectbox('Select a movie ', titles, index=None)
+        top_n = st.slider('N movies to recommend  ', min_value=1, max_value=10, value=0)
+        recommend_button = st.button('Recommend')
+
+        if recommend_button and top_n > 0:
+            st.write(knn.get_recommendation(selected_movie, top_n))
