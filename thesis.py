@@ -212,7 +212,7 @@ class CollaborativeBasedRecommender:
             sorted_merged_series = merged_series.sort_values('distance', ascending=True)
 
             for index, row in sorted_merged_series.iterrows():
-                result.append(f'({index+1}) {row["movie"]}')
+                result.append(row["movie"])
 
         print(f'Prediction finished in {round(time.time() - start_time, 2)} sec')
         return result
