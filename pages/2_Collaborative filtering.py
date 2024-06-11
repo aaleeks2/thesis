@@ -59,7 +59,7 @@ st.header('Recommenders')
 
 col01, col02 = st.columns(2)
 with col01:
-    st.header('Decomposition models')
+    st.header('Explicit collaborative filtering - Decomposition models')
     st.subheader('SVD')
     # selected_movie = st.selectbox('Select a movie', titles, index=None)
     top_n = st.slider('N movies to recommend', min_value=1, max_value=10, value=0)
@@ -76,7 +76,7 @@ with col02:
     if 'user_id' not in st.session_state:
         st.session_state['user_id'] = previous_user_id
 
-    st.header('Unsupervised learning recommender - K nearest neighbors')
+    st.header('Implicit collaborative filtering - unsupervised learning recommender - K nearest neighbors')
 
     # get recommendation
 
