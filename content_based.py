@@ -1,34 +1,20 @@
-import time
-from enum import Enum
 import pandas as pd
-import numpy as np
-from sklearn.metrics.pairwise import linear_kernel
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from scipy.sparse import csr_matrix
-from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics.pairwise import cosine_similarity
-from surprise import Reader, Dataset, SVD, NMF
-from surprise.model_selection import cross_validate
 from ast import literal_eval
+from utils import find_movies
 
+PATH_TMDB_5000_CREDITS = 'thesis_datasets/tmdb_5000_credits.csv'
+PATH_TMDB_5000_MOVIES = 'thesis_datasets/tmdb_5000_movies.csv'
 
-def find_movies(dataframe: pd.DataFrame, column_name: str, query_string: str):
-    if column_name not in dataframe.columns:
-        raise ValueError(f"Column '{column_name}' does not exist in the dataframe")
-
-    mask = dataframe[column_name].str.contains(query_string, case=False, na=False)
-    matching_movies = dataframe[mask]
-    result = matching_movies[[column_name]].reset_index()
-    return result
 
 class ContentBasedRecommender:
     def __init__(self):
-        self._credits: pd.DataFrame = pd.read_csv('thesis_datasets/tmdb_5000_credits.csv')
-        self._movies: pd.DataFrame = pd.read_csv('thesis_datasets/tmdb_5000_movies.csv')
+        self._credits: pd.DataFrame = pd.read_csv(PATH_TMDB_5000_CREDITS)
+        self._movies: pd.DataFrame = pd.read_csv(PATH_TMDB_5000_MOVIES)
         self._credits.columns = ['id', 'tittle', 'cast', 'crew']
         self._movies = self._movies.merge(self._credits, on='id')
-        print('Content Based constructor')
 
     def search_for_movie(self, query):
         return find_movies(self._movies, 'original_title', query)
@@ -92,10 +78,10 @@ class ContentBasedRecommender:
         movie_indices = [i[0] for i in sim_scores]
         return self._movies['title'].iloc[movie_indices]
 
-    def _get_director(self, x):
-        for i in x:
-            if i['job'] == 'Director':
-                return i['name']
+    def _get_director(self, crew):
+        for person in crew:
+            if person['job'] == 'Director':
+                return person['name']
         return None
 
     def _get_list(self, x):
@@ -118,5 +104,3 @@ class ContentBasedRecommender:
 
     def _create_soup(self, x):
         return ' '.join(x['keywords']) + ' ' + ' '.join(x['cast']) + ' ' + x['director'] + ' ' + ' '.join(x['genres'])
-
-
