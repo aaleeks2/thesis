@@ -162,20 +162,55 @@ class CollaborativeKnn:
         ratings_data = self._ratings[['userId', 'movieId', 'rating']]
         merged = pd.merge(ratings_data, movies_data, on='movieId')
         self._merged_knn_data_model = merged
-        self._user_movie_table = merged.pivot_table(index=['title'], columns=['userId'], values='rating').fillna(0)
+        self._user_movie_table = merged.pivot_table(index=['title'], columns=['userId'],
+                                                    values='rating').fillna(0)
         self._algo = None
+        self._validation_results = None
 
     def train_model(self):
         user_movie_table_matrix = csr_matrix(self._user_movie_table)
         model_knn = NearestNeighbors(metric='cosine', algorithm='brute')
         model_knn.fit(user_movie_table_matrix)
-        print(model_knn.effective_metric_)
+        self._algo = model_knn
+
+    def evaluate_model(self):
+        if self._algo is None:
+            self.train_model()
+
+        distances, indices = self._algo.kneighbors()
+        ## todo - to be continued
+
 
     def get_titles(self):
         return self._movies['title'].values
 
     def get_user_ids(self):
         return self._ratings['userId'].astype(int).unique()
+
+    def get_n_recommendations(self, movie_title: str, n_recommendations: int = 5):
+        if self._algo is None:
+            self.train_model()
+
+        query_index = self._user_movie_table.index.get_loc(movie_title)
+        distances, indices = self._algo.kneighbors(self._user_movie_table.iloc[query_index, :].values.reshape(1, -1),
+                                                   n_neighbors=n_recommendations + 1)
+        recommended_movies = []
+        calculated_distances = []
+
+        for i in range(1, len(distances.flatten())):
+            recommended_movies.append(self._user_movie_table.index[indices.flatten()][i])
+            calculated_distances.append(distances.flatten()[i])
+
+        movie_series = pd.Series(recommended_movies, name='movie')
+        distance_series = pd.Series(calculated_distances, name='distance')
+        merged_series = pd.concat([movie_series, distance_series], axis=1)
+        sorted_merged_series = merged_series.sort_values('distance', ascending=True)
+
+        result = []
+        for index, row in sorted_merged_series.iterrows():
+            result.append(f'{row["movie"]} ({round(row["distance"], 3)})')
+
+        return result
 
 def add_rating(user_id: int, movie_title: str, rating: float):
     movies = pd.read_csv('thesis_datasets/movies.csv')
