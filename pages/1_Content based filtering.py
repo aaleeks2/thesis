@@ -1,10 +1,11 @@
 import streamlit as st
-import thesis
+import content_based
+
 st.set_page_config(layout="wide")
 st.title('Content based recommender')
 st.write('***')
 
-contentBased = thesis.ContentBasedRecommender()
+contentBased = content_based.ContentBasedRecommender()
 col1, col2, col3 = st.columns(3)
 
 with col1:

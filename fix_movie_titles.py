@@ -1,6 +1,6 @@
 import pandas as pd
-pattern = ', The ('
 df = pd.read_csv('thesis_datasets/movies.csv')
+
 
 def correct_title(title):
     if ', The' in title:
@@ -9,6 +9,7 @@ def correct_title(title):
         return corrected_title
     else:
         return title
+
 
 df['title'] = df['title'].apply(correct_title)
 
