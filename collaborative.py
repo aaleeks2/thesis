@@ -14,10 +14,10 @@ class AlgorithmType(Enum):
 
 
 class CollaborativeBasedRecommender:
-    def __init__(self, algo_type: AlgorithmType = AlgorithmType.SVD):
+    def __init__(self):
         self._ratings = pd.read_csv('thesis_datasets/ratings.csv')
         self._movies = pd.read_csv('thesis_datasets/movies.csv')
-        self.decomposition_algo = CollaborativeDecomposition(self._ratings, algo_type)
+        self.decomposition_algo = CollaborativeDecomposition(self._ratings)
         self.knn = CollaborativeKnn()
 
     def get_movie_titles(self):
@@ -25,31 +25,28 @@ class CollaborativeBasedRecommender:
 
 
 class CollaborativeDecomposition:
-    def __init__(self, ratings: pd.DataFrame, algo_type: AlgorithmType = AlgorithmType.SVD):
+    def __init__(self, ratings: pd.DataFrame):
         self._reader = Reader(rating_scale=(0.5, 5))
         self._data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], self._reader)
         self._algo = None
-        self._algo_type = algo_type
-        self._validation_results = None
-        self._rmse = None
 
-    def set_algo_type(self, algo_type: AlgorithmType):
-        self._algo_type = algo_type
+    def set_algo(self, algo_type: AlgorithmType = AlgorithmType.SVD):
+        if algo_type == AlgorithmType.SVD:
+            self._algo = SVD()
+        else:
+            self._algo = NMF()
 
     def validate_model(self):
         train_set, test_set = train_test_split(self._data, test_size=0.2)
 
         if self._algo is None:
-            if self._algo_type == AlgorithmType.SVD:
-                algo = SVD()
-            else:
-                algo = NMF()
-            algo.fit(train_set)
-            self._algo = algo
+            self.set_algo()
 
+        self._algo.fit(train_set)
         predictions = self._algo.test(test_set)
-        self._rmse = accuracy.rmse(predictions, verbose=True)
-        self._validation_results = cross_validate(self._algo, self._data, measures=['RMSE', 'MAE'], cv=5, verbose=True)
+        rmse = accuracy.rmse(predictions, verbose=True)
+        validation_results = cross_validate(self._algo, self._data, measures=['RMSE', 'MAE'], cv=5, verbose=True)
+        return validation_results, rmse
 
     def get_recommendations(self, user_id: int, recommendations_number: int):
         self.validate_model()

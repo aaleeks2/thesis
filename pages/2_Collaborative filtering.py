@@ -64,7 +64,7 @@ with col01:
         top_n = st.slider('N movies to recommend', min_value=1, max_value=10, value=0)
         recommend_button = st.button('Recommend with SVD')
         if recommend_button and top_n > 0:
-            collab_recommenders.decomposition_algo.set_algo_type(collaborative.AlgorithmType.SVD)
+            collab_recommenders.decomposition_algo.set_algo(collaborative.AlgorithmType.SVD)
             st.write(pd.DataFrame(collab_recommenders.decomposition_algo.get_recommendations(st.session_state.user_id,
                                                                                              top_n)))
     else:
@@ -75,7 +75,7 @@ with col01:
         top_n = st.slider('N movies to recommend ', min_value=1, max_value=10, value=0)
         recommend_button = st.button('Recommend with NMF')
         if recommend_button and top_n > 0:
-            collab_recommenders.decomposition_algo.set_algo_type(collaborative.AlgorithmType.NMF)
+            collab_recommenders.decomposition_algo.set_algo(collaborative.AlgorithmType.NMF)
             st.write(pd.DataFrame(collab_recommenders.decomposition_algo.get_recommendations(st.session_state.user_id,
                                                                                              top_n)))
     else:
