@@ -9,21 +9,22 @@ st.write('***')
 collab_recommenders = collaborative.CollaborativeBasedRecommender()
 previous_user_id = 0
 titles = collab_recommenders.get_movie_titles()
+nn_algorithms = ['ball_tree', 'kd_tree', 'brute']
+brute_metrics = ['cityblock', 'cosine', 'euclidean', 'l1', 'l2', 'manhattan']
+ball_tree_metrics = ['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'dice', 'euclidean', 'hamming', 'infinity', 'jaccard', 'l1', 'l2', 'manhattan', 'minkowski', 'p', 'rogerstanimoto', 'russellrao', 'sokalmichener', 'sokalsneath']
+kd_tree_metrics = ['chebyshev', 'cityblock', 'euclidean', 'infinity', 'l1', 'l2', 'manhattan', 'minkowski', 'p']
+metrics = {'brute': brute_metrics, 'ball_tree': ball_tree_metrics, 'kd_tree': kd_tree_metrics}
 
 
 def set_new_user_id(new_user_id: int):
     st.session_state.user_id = new_user_id
 
 
-def add_rating():
-    the_movie = st.session_state.movie
-    st.session_state.movie = None
-    the_rating = st.session_state.rating
-    st.session_state.rating = 1
+def add_rating(movie, user_rating):
     the_user_id = st.session_state.user_id
-    if the_movie is None or the_rating is None or the_user_id is None:
-        raise ValueError(f'Missing data: movie: {the_movie}, rating: {the_rating}, user ID: {the_user_id}')
-    utils.add_rating(the_user_id, the_movie, the_rating)
+    if movie is None or user_rating is None or the_user_id is None:
+        raise ValueError(f'Missing data: movie: {movie}, rating: {user_rating}, user ID: {the_user_id}')
+    utils.add_rating(the_user_id, movie, user_rating)
     global previous_user_id
     previous_user_id = the_user_id
 
@@ -47,11 +48,13 @@ if st.session_state.user_id is not 0 and st.session_state.user_id is not None:
     else:
         st.write(user_ratings)
 
-with st.form('add_rating_form'):
+with st.form('add_rating_form', clear_on_submit=True):
     st.subheader('Add rating')
     selected_movie = st.selectbox('Select a movie', titles, index=None, key='movie')
     rating = st.slider(label='Rating', min_value=1.0, max_value=5.0, step=0.5, key='rating')
-    submit_button = st.form_submit_button(label='Submit', on_click=add_rating)
+    submit_button = st.form_submit_button(label='Submit')
+    if submit_button:
+        add_rating(selected_movie, rating)
 
 st.write('***')
 st.header('Recommenders')
@@ -88,7 +91,12 @@ with col02:
     st.header('Implicit collaborative filtering - unsupervised learning recommender - K nearest neighbors')
     selected_movie = st.selectbox('Select a movie ', titles, index=None)
     top_n = st.slider('N movies to recommend  ', min_value=1, max_value=10, value=0)
-    recommend_button = st.button('Recommend with KNN')
-    if recommend_button and top_n > 0 and selected_movie is not None:
-        st.write(pd.DataFrame(collab_recommenders.knn.get_n_recommendations(selected_movie, top_n)))
+    algorithm = st.selectbox('Select an algorithm ', nn_algorithms, index=None)
+    if algorithm:
+        metrics_fixed = metrics[algorithm]
+        metric = st.selectbox('Select a metric', metrics_fixed, index=None)
+        recommend_button = st.button('Recommend with KNN')
+        if recommend_button and top_n > 0 and selected_movie is not None:
+            collab_recommenders.set_knn(metric, algorithm)
+            st.write(pd.DataFrame(collab_recommenders.knn.get_n_recommendations(selected_movie, top_n)))
 

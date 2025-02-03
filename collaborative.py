@@ -5,6 +5,8 @@ from sklearn.neighbors import NearestNeighbors
 from surprise import Dataset, Reader, accuracy, SVD, NMF
 from surprise.model_selection import cross_validate, train_test_split
 from utils import get_movies_by_ids
+from sklearn.preprocessing import Normalizer, StandardScaler
+from sklearn.metrics import calinski_harabasz_score, silhouette_score
 
 
 class AlgorithmType(Enum):
@@ -22,6 +24,9 @@ class CollaborativeBasedRecommender:
 
     def get_movie_titles(self):
         return self.knn.get_titles()
+
+    def set_knn(self, metric: str, algorith: str):
+        self.knn = CollaborativeKnn(metric, algorith)
 
 
 class CollaborativeDecomposition:
@@ -45,7 +50,7 @@ class CollaborativeDecomposition:
         self._algo.fit(train_set)
         predictions = self._algo.test(test_set)
         rmse = accuracy.rmse(predictions, verbose=True)
-        validation_results = cross_validate(self._algo, self._data, measures=['RMSE', 'MAE'], cv=5, verbose=True)
+        validation_results = cross_validate(self._algo, self._data, measures=['RMSE', 'MAE', 'MSE', 'FCP'], cv=5, verbose=True, return_train_measures=True)
         return validation_results, rmse
 
     def get_recommendations(self, user_id: int, recommendations_number: int):
@@ -68,22 +73,29 @@ class CollaborativeDecomposition:
 
 
 class CollaborativeKnn:
-    def __init__(self):
+    def __init__(self, metric: str = 'cosine', algorithm: str = 'brute'):
         self._ratings = pd.read_csv('thesis_datasets/ratings.csv')
         self._movies = pd.read_csv('thesis_datasets/movies.csv')
         movies_data = self._movies[['movieId', 'title']]
         ratings_data = self._ratings[['userId', 'movieId', 'rating']]
         merged = pd.merge(ratings_data, movies_data, on='movieId')
         self._merged_knn_data_model = merged
+        self._metric = metric
+        self._algorithm = algorithm
         self._user_movie_table = merged.pivot_table(index=['title'], columns=['userId'],
                                                     values='rating').fillna(0)
         self._algo = None
         self._validation_results = None
 
     def train_model(self):
-        user_movie_table_matrix = csr_matrix(self._user_movie_table)
-        model_knn = NearestNeighbors(metric='cosine', algorithm='brute')
-        model_knn.fit(user_movie_table_matrix)
+        if self._algo is 'brute':
+            user_movie_table_matrix = csr_matrix(self._user_movie_table)
+            normalized_user_movie_table_matrix = Normalizer().fit_transform(user_movie_table_matrix)
+            data = normalized_user_movie_table_matrix
+        else:
+            data = self._user_movie_table
+        model_knn = NearestNeighbors(metric=self._metric, algorithm=self._algorithm)
+        model_knn.fit(data)
         self._algo = model_knn
 
     def get_titles(self):
@@ -93,8 +105,7 @@ class CollaborativeKnn:
         return self._ratings['userId'].astype(int).unique()
 
     def get_n_recommendations(self, movie_title: str, n_recommendations: int = 5):
-        if self._algo is None:
-            self.train_model()
+        self.train_model()
 
         query_index = self._user_movie_table.index.get_loc(movie_title)
         distances, indices = self._algo.kneighbors(self._user_movie_table.iloc[query_index, :].values.reshape(1, -1),
