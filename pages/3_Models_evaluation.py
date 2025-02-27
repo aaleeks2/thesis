@@ -10,7 +10,7 @@ collab_recommenders = collaborative.CollaborativeBasedRecommender()
 
 st.header('Singular Value Decomposition')
 collab_recommenders.decomposition_algo.set_algo(collaborative.AlgorithmType.SVD)
-validate_results_svd, rmse_svd = collab_recommenders.decomposition_algo.validate_model()
+validate_results_svd, rmse_svd = collab_recommenders.decomposition_algo.validate_model(True)
 svd_rmse, svd_mae, svd_mse, svd_fcp, svd_fit_time, svd_test_time = st.columns(6)
 
 with svd_rmse:
@@ -28,7 +28,7 @@ with svd_test_time:
 
 st.header('Non-negative Matrix Factorization')
 collab_recommenders.decomposition_algo.set_algo(collaborative.AlgorithmType.NMF)
-validate_results_nmf, rmse_nmf = collab_recommenders.decomposition_algo.validate_model()
+validate_results_nmf, rmse_nmf = collab_recommenders.decomposition_algo.validate_model(True)
 nmf_rmse, nmf_mae, nmf_mse, nmf_fcp, nmf_fit_time, nmf_test_time = st.columns(6)
 
 with nmf_rmse:

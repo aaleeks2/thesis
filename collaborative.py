@@ -4,7 +4,7 @@ from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 from surprise import Dataset, Reader, accuracy, SVD, NMF
 from surprise.model_selection import cross_validate, train_test_split
-from utils import get_movies_by_ids
+from utils import get_movies_by_ids, load_model
 from sklearn.preprocessing import Normalizer, StandardScaler
 from sklearn.metrics import calinski_harabasz_score, silhouette_score
 
@@ -41,7 +41,7 @@ class CollaborativeDecomposition:
         else:
             self._algo = NMF()
 
-    def validate_model(self):
+    def validate_model(self, evaluate: bool = False):
         train_set, test_set = train_test_split(self._data, test_size=0.2)
 
         if self._algo is None:
@@ -49,9 +49,10 @@ class CollaborativeDecomposition:
 
         self._algo.fit(train_set)
         predictions = self._algo.test(test_set)
-        rmse = accuracy.rmse(predictions, verbose=True)
-        validation_results = cross_validate(self._algo, self._data, measures=['RMSE', 'MAE', 'MSE', 'FCP'], cv=5, verbose=True, return_train_measures=True)
-        return validation_results, rmse
+        if evaluate:
+            rmse = accuracy.rmse(predictions, verbose=True)
+            validation_results = cross_validate(self._algo, self._data, measures=['RMSE', 'MAE', 'MSE', 'FCP'], cv=5, verbose=True, return_train_measures=True)
+            return validation_results, rmse
 
     def get_recommendations(self, user_id: int, recommendations_number: int):
         self.validate_model()

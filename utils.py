@@ -1,3 +1,4 @@
+import pickle
 import pandas as pd
 
 
@@ -53,3 +54,17 @@ def get_user_ratings(user_id: int):
     merged = pd.merge(ratings_data, movies_data, on='movieId')
     ratings = merged.loc[merged['userId'] == user_id]
     return ratings[['title', 'rating']]
+
+
+def save_model(model, filename):
+    """Save the trained model to a file."""
+    with open(filename, 'wb') as file:
+        pickle.dump(model, file)
+    print(f"Model saved to {filename}")
+
+
+def load_model(filename):
+    """Load a trained model from a file."""
+    with open(filename, 'rb') as file:
+        model = pickle.load(file)
+    return model

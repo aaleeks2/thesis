@@ -1,5 +1,8 @@
 import collaborative
 import pandas as pd
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', 500)
+pd.set_option('display.expand_frame_repr', False)
 from scipy.sparse import csr_matrix
 from sklearn.preprocessing import Normalizer, StandardScaler
 from sklearn import neighbors
@@ -19,5 +22,10 @@ if __name__ == '__main__':
     # xd = user_movie_table.iloc[9, :].values.reshape(1, -1)
     # print(xd)
     # print(normalized[0:10])
-    print(sorted(neighbors.VALID_METRICS['kd_tree']))
+    # print(sorted(neighbors.VALID_METRICS['kd_tree']))
+    df = pd.read_csv('thesis_datasets/tmdb_5000_movies.csv')
+    print(df.head(5))
+
+    res = df[df['original_title'] == 'Avatar']['overview']
+    print(res)
 

@@ -42,6 +42,7 @@ class ContentBasedRecommender:
         :param top_n:
         :return:
         """
+        start = time.time()
         mean_vote = self._movies['vote_average'].mean()
         minimum_votes = self._movies['vote_count'].quantile(0.50)
         q_movies = self._movies.copy().loc[self._movies['vote_count'] >= minimum_votes]
@@ -55,7 +56,10 @@ class ContentBasedRecommender:
 
         q_movies['score'] = q_movies.apply(weighted_rating, axis=1)
         q_movies = q_movies.sort_values(by='score', ascending=False)
-        return q_movies[['title', 'vote_count', 'vote_average', 'score']].head(top_n)
+        result = q_movies[['title', 'vote_count', 'vote_average', 'score']].head(top_n)
+        end = time.time()
+        print(f'Time taken to create a ranking in ms: {end - start}')
+        return result
 
     def get_plot_description_based_recommendations(self, title: str, top_n: int = 5):
         tfidf = TfidfVectorizer(stop_words='english')
@@ -118,5 +122,3 @@ class ContentBasedRecommender:
 
     def _create_soup(self, x):
         return ' '.join(x['keywords']) + ' ' + ' '.join(x['cast']) + ' ' + x['director'] + ' ' + ' '.join(x['genres'])
-
-
