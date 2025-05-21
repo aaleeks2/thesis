@@ -36,15 +36,6 @@ with col2:
         st.table(contentBased.get_plot_description_based_recommendations(selected_movie_title, top_n))
 
     if contentBased.plot_desc_recommender_plot_data is not None:
-        wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(
-            dict(zip(contentBased.plot_desc_recommender_plot_data['top_features'], contentBased.plot_desc_recommender_plot_data['top_scores'])))
-
-        # Wyświetlenie chmury słów
-        xd = plt.figure(figsize=(10, 5))
-        plt.imshow(wordcloud, interpolation='bilinear')
-        plt.axis('off')
-        st.pyplot(xd)
-
         # with regular_plot_col:
         xd2 = plt.figure(figsize=(10, 6))
         plt.barh(contentBased.plot_desc_recommender_plot_data['top_features'], contentBased.plot_desc_recommender_plot_data['top_scores'], color='skyblue')
