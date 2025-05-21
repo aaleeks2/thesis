@@ -1,10 +1,10 @@
 import pandas as pd
 import time
+import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
+from sklearn.metrics.pairwise import cosine_similarity
 from ast import literal_eval
-from utils import find_movies
 
 PATH_TMDB_5000_CREDITS = 'thesis_datasets/tmdb_5000_credits.csv'
 PATH_TMDB_5000_MOVIES = 'thesis_datasets/tmdb_5000_movies.csv'
@@ -12,6 +12,7 @@ PATH_TMDB_5000_MOVIES = 'thesis_datasets/tmdb_5000_movies.csv'
 
 class ContentBasedRecommender:
     def __init__(self):
+        self.plot_desc_recommender_plot_data = None
         self._credits: pd.DataFrame = pd.read_csv(PATH_TMDB_5000_CREDITS)
         self._movies_single: pd.DataFrame = pd.read_csv(PATH_TMDB_5000_MOVIES)
         self._credits.columns = ['id', 'tittle', 'cast', 'crew']
@@ -53,12 +54,34 @@ class ContentBasedRecommender:
     def get_plot_description_based_recommendations(self, title: str, top_n: int = 5):
         tfidf = TfidfVectorizer(stop_words='english')
         self._movies['overview'] = self._movies['overview'].fillna('')
+
+        start = time.time()
+
         tfidf_matrix = tfidf.fit_transform(self._movies['overview'])
+        the_movie_tfidf_matrix = tfidf.fit_transform(self._movies[self._movies['title'] == title]['overview'])
+
+        feature_names = tfidf.get_feature_names_out()
+        tfidf_scores = np.asarray(the_movie_tfidf_matrix.mean(axis=0)).flatten()
+
+        sorted_indices = np.argsort(tfidf_scores)[::-1]
+        sorted_features = [feature_names[i] for i in sorted_indices]
+        sorted_scores = [tfidf_scores[i] for i in sorted_indices]
+
+        top = 10
+        top_features = sorted_features[:top]
+        top_scores = sorted_scores[:top]
+
+        self.plot_desc_recommender_plot_data = {'top_features': top_features, 'top_scores': top_scores, 'feature_names': sorted_features, 'tfidf_scores': sorted_scores}
+
         cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
         indices = pd.Series(self._movies.index, index=self._movies['title']).drop_duplicates()
+        end_2 = time.time()
+        plot_desc_time = (end_2 - start) * 1000
+        print(f'Plot desc recommendation time: {round(plot_desc_time, 2)} ms.')
         return self._get_recommendation(title, ['title', 'overview'], indices, cosine_sim, top_n)
 
     def get_credits_genres_keywords_based_recommendations(self, title: str, top_n: int = 5):
+        start = time.time()
         features = ['cast', 'crew', 'keywords', 'genres']
         for feature in features:
             self._movies[feature] = self._movies[feature].apply(literal_eval)
@@ -70,11 +93,16 @@ class ContentBasedRecommender:
         for feature in features:
             self._movies[feature] = self._movies[feature].apply(self._clean_data)
         self._movies['soup'] = self._movies.apply(self._create_soup, axis=1)
+        start_2 = time.time()
         count = CountVectorizer(stop_words='english')
         count_matrix = count.fit_transform(self._movies['soup'])
+        end = time.time()
         cosine_sim = cosine_similarity(count_matrix, count_matrix)
         self._movies = self._movies.reset_index()
         indices = pd.Series(self._movies.index, index=self._movies['title'])
+        end_2 = time.time()
+        print(f'Time taken to create keywords: {round((end - start_2) * 1000, 2)} ms.')
+        print(f'Time taken to recommend movies: {round((end_2 - start) * 1000, 2)} ms.')
         return self._get_recommendation(title, ['title', 'cast', 'keywords', 'genres'],
                                         indices, cosine_sim, top_n)
 
@@ -84,7 +112,9 @@ class ContentBasedRecommender:
         sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
         sim_scores = sim_scores[1:top_n + 1]
         movie_indices = [i[0] for i in sim_scores]
-        return self._movies[result_columns].iloc[movie_indices]
+        result = self._movies[result_columns].iloc[movie_indices]
+        result['sim_score'] = np.array(sim_scores)[:, 1]
+        return result
 
     def _get_director(self, crew):
         for person in crew:

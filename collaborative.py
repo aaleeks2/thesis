@@ -4,10 +4,8 @@ from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors
 from surprise import Dataset, Reader, accuracy, SVD, NMF
 from surprise.model_selection import cross_validate, train_test_split
-from utils import get_movies_by_ids, load_model
-from sklearn.preprocessing import Normalizer, StandardScaler
-from sklearn.metrics import calinski_harabasz_score, silhouette_score
-
+from sklearn.preprocessing import Normalizer
+import time
 
 class AlgorithmType(Enum):
     SVD = 0
@@ -31,9 +29,12 @@ class CollaborativeBasedRecommender:
 
 class CollaborativeDecomposition:
     def __init__(self, ratings: pd.DataFrame):
+        self._ratings = pd.read_csv('thesis_datasets/ratings.csv')
+        self._movies = pd.read_csv('thesis_datasets/movies.csv')
         self._reader = Reader(rating_scale=(0.5, 5))
         self._data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], self._reader)
         self._algo = None
+        self._movies_dict = dict(zip(self._movies['movieId'], self._movies['title']))
 
     def set_algo(self, algo_type: AlgorithmType = AlgorithmType.SVD):
         if algo_type == AlgorithmType.SVD:
@@ -47,30 +48,42 @@ class CollaborativeDecomposition:
         if self._algo is None:
             self.set_algo()
 
+        start = time.time()
         self._algo.fit(train_set)
+        end = time.time()
+        print(f'Algorithm trained in {end - start:.2f} seconds')
         predictions = self._algo.test(test_set)
         if evaluate:
             rmse = accuracy.rmse(predictions, verbose=True)
-            validation_results = cross_validate(self._algo, self._data, measures=['RMSE', 'MAE', 'MSE', 'FCP'], cv=5, verbose=True, return_train_measures=True)
+            validation_results = cross_validate(self._algo, self._data, measures=['rmse', 'mae', 'mse', 'fcp'], cv=5,
+                                                verbose=True, return_train_measures=True)
             return validation_results, rmse
 
     def get_recommendations(self, user_id: int, recommendations_number: int):
+        start = time.time()
         self.validate_model()
-        train_set = self._data.build_full_trainset()
-        test_set = train_set.build_anti_testset()
-        predictions = self._algo.test(test_set)
-        user_predictions = [pred for pred in predictions if pred.uid == user_id]
+        user_predictions = []
+
+        for index, row in self._movies.iterrows():
+            movie_ratings = self._ratings[self._ratings['movieId'] == row['movieId']]
+            user_movie_ratings = movie_ratings[movie_ratings['userId'] == user_id]
+            if user_movie_ratings.empty:
+                prediction = self._algo.predict(user_id, row['movieId'])
+            else:
+                prediction = self._algo.predict(user_id, row['movieId'], user_movie_ratings.iloc[0, 2])
+            user_predictions.append(prediction)
+
         user_predictions.sort(key=lambda x: x.est, reverse=True)
         top_n_recommendations = user_predictions[:recommendations_number]
-        top_n_recommendations_movie_ids = [pred.iid for pred in top_n_recommendations]
-        movies_dict = get_movies_by_ids(top_n_recommendations_movie_ids)
-        result = []
-        for pred in top_n_recommendations:
-            print(f"Movie [ID: {pred.iid}] {movies_dict.get(pred.iid)}, Estimated Rating: {pred.est:.2f}")
-            entry = {'title': movies_dict.get(pred.iid), 'est_rating': round(pred.est, 2)}
-            result.append(entry)
 
-        return result
+        described_predictions = []
+        for pred in top_n_recommendations:
+            described_predictions.append({'title': self._movies_dict.get(pred.iid), 'est_rating': round(pred.est, 2)})
+
+        end = time.time()
+        prediction_time = round((end - start), 2)
+        print(f'Prediction time: {prediction_time}')
+        return described_predictions
 
 
 class CollaborativeKnn:
