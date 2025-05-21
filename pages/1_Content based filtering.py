@@ -3,7 +3,6 @@ import streamlit as st
 import content_based
 import matplotlib.pyplot as plt
 from utils import find_movies
-from wordcloud import WordCloud
 
 st.set_page_config(layout="wide")
 st.title('Content based recommender')
