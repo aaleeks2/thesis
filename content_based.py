@@ -67,11 +67,12 @@ class ContentBasedRecommender:
         sorted_features = [feature_names[i] for i in sorted_indices]
         sorted_scores = [tfidf_scores[i] for i in sorted_indices]
 
-        top = 10
+        top = 5
         top_features = sorted_features[:top]
         top_scores = sorted_scores[:top]
 
-        self.plot_desc_recommender_plot_data = {'top_features': top_features, 'top_scores': top_scores, 'feature_names': sorted_features, 'tfidf_scores': sorted_scores}
+        self.plot_desc_recommender_plot_data = {'top_features': top_features, 'top_scores': top_scores,
+                                                'feature_names': sorted_features, 'tfidf_scores': sorted_scores}
 
         cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
         indices = pd.Series(self._movies.index, index=self._movies['title']).drop_duplicates()
